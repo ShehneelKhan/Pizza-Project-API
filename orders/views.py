@@ -4,8 +4,15 @@ from rest_framework.response import Response
 from . import serializers
 from .models import Order
 from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import get_user_model
+from django.db.models import Q
+
 
 # Create your views here.
+
+User = get_user_model()
+
+
 
 class HelloOrderView(generics.GenericAPIView):
     def get(self, request):
@@ -73,6 +80,42 @@ class UpdateOrderStatus(generics.GenericAPIView):
             serializer.save()
             return Response(data=serializer.data, status=status.HTTP_200_OK)
         return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class UserOrdersView(generics.GenericAPIView):
+    serializer_class = serializers.OrderDetailsSerializer
+
+    def get(self,request, user_id):
+        #user = User.objects.get(pk=user_id)
+        user = get_object_or_404(User,pk=user_id)
+        #if user:
+        orders = Order.objects.all().filter(customer=user)
+        serializer = self.serializer_class(instance=orders, many=True)       
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+       # return Response(data=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class UserOrderDetail(generics.GenericAPIView):
+    serializer_class = serializers.OrderDetailsSerializer
+
+    def get(self,request,user_id,order_id):
+        user = get_object_or_404(User,pk=user_id)
+        #user = User.objects.get(pk=user_id)
+        try:
+            order = Order.objects.all().filter(customer=user).get(pk=order_id)
+            serializer = self.serializer_class(instance=order)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        except Order.DoesNotExist:
+            return Response(data={'detail': "Order not found"}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+
+
+
+
+
 
 
 
